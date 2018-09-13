@@ -8,6 +8,25 @@ const app = express()
 // we've started you off with Express, 
 // but feel free to use whatever libs or frameworks you'd like through `package.json`.
 
+var client = require('emitter-io').connect()
+client.subscribe({
+  key: process.env.BROKER_KEY,
+  channel: "cyber-text"
+})
+
+client.on('connect', function(connack) {
+  //console.log(connack);
+  console.log("Connected to dream broker")
+});
+
+client.on('message', function (msg) {
+  console.log(msg.asString());
+});
+
+client.on('error', function(msg) {
+  console.log(msg.asString());
+});
+
 // http://expressjs.com/en/starter/static-files.html
 app.use(express.static('public'))
 
@@ -30,19 +49,32 @@ app.get("/dreams", (request, response) => {
 // could also use the POST body instead of query string: http://expressjs.com/en/api.html#req.body
 app.post("/dreams", (request, response) => {
   dreams.push(request.query.dream)
+
+  console.log("Sending dream to the dream broker...\nHe hears your wishes, and files them away.")
+  //Send the dream to the broker
+  client.publish({
+    key: process.env.BROKER_KEY,
+    channel: "cyber-text",
+    message: request.query.dream
+  });
+
   response.sendStatus(200)
 })
 
 app.post("/test", (request, response) => {
-  response.send(JSON.stringify({"test": "testtest"}));  
+  response.send(JSON.stringify({
+    "test": "testtest"
+  }));
 })
 
 app.put("/puttest", (request, response) => {
   console.log(request);
-  response.send(JSON.stringify({"response": "hello"}));
+  response.send(JSON.stringify({
+    "response": "hello"
+  }));
 })
 
 // listen for requests :)
 const listener = app.listen(process.env.PORT, () => {
   console.log(`Your app is listening on port ${listener.address().port}`)
-})
+});
