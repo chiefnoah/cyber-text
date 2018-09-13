@@ -8,22 +8,27 @@ const app = express()
 // we've started you off with Express, 
 // but feel free to use whatever libs or frameworks you'd like through `package.json`.
 
-var client = require('emitter-io').connect()
-client.subscribe({
-  key: process.env.BROKER_KEY,
-  channel: "cyber-text"
-})
+var client = require('emitter-io').connect({
+  secure: true
+});
 
-client.on('connect', function(connack) {
+client.on('connect', function (connack) {
   //console.log(connack);
   console.log("Connected to dream broker")
+  client.subscribe({
+    key: process.env.BROKER_KEY,
+    channel: "cyber-text/",
+    last: 5
+  });
+  client.on('message', function (msg) {
+    console.log(msg.asString());
+    dreams.push(msg.asString());
+  });
 });
 
-client.on('message', function (msg) {
-  console.log(msg.asString());
-});
 
-client.on('error', function(msg) {
+
+client.on('error', function (msg) {
   console.log(msg.asString());
 });
 
@@ -54,24 +59,11 @@ app.post("/dreams", (request, response) => {
   //Send the dream to the broker
   client.publish({
     key: process.env.BROKER_KEY,
-    channel: "cyber-text",
+    channel: "cyber-text/",
     message: request.query.dream
   });
 
   response.sendStatus(200)
-})
-
-app.post("/test", (request, response) => {
-  response.send(JSON.stringify({
-    "test": "testtest"
-  }));
-})
-
-app.put("/puttest", (request, response) => {
-  console.log(request);
-  response.send(JSON.stringify({
-    "response": "hello"
-  }));
 })
 
 // listen for requests :)
